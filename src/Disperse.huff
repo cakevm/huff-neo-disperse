@@ -1,0 +1,119 @@
+/// @title Disperse
+/// @author cakevm
+/// @notice Sends ETH to many addresses in one transaction.
+/// @dev Calldata: 32-byte entries `wei << 160 | address`, then the uint32 timestamp of the block
+/// the batch is for:
+///
+///     000000000de0b6b3a7640000 00000000000000000000000000000000000a11ce   1 ether to 0xa11ce
+///     0000000003782dace9d90000 0000000000000000000000000000000000000b0b   0.25 ether to 0xb0b
+///     6553f100                                                            timestamp 1700000000
+///
+/// An account without code is paid with a CALL. An account with code is paid through the
+/// forwarder, so its code does not run. The first entry is paid last, with Disperse's own
+/// SELFDESTRUCT when it takes exactly what is left. Otherwise the rest of the value is refunded to
+/// the caller. If any payment fails, the batch reverts.
+///
+/// Stack names: `entry` is the current entry, `offset` its position in the calldata, `ok` is 1
+/// until a payment fails, and -32 steps to the previous entry.
+
+/* Constants */
+
+// The forwarder, which pays a contract without running its code
+#define constant FORWARDER = 0x6d93D11e4C74e195DEe61693650D4FabCB6D6013
+
+/* Payment Macros */
+
+/// @notice Pays an account without code with a CALL, with no gas but the 2,300 stipend
+/// @dev Clears ok on failure. Shares the forwarder's 32-byte input, which an account ignores.
+#define macro PAY_BY_CALL() = takes(7) returns(2) {
+    // takes: [entry, 0, 32, 0, 0, offset, ok]
+    dup1 0xa0 shr               // [amount, entry, 0, 32, 0, 0, offset, ok]
+    // CALL masks the address, no AND needed
+    swap1 0x00 call             // [success, offset, ok]
+    // AND, not a JUMPI per payment
+    dup3 and swap2 pop          // [offset, ok & success]
+}
+
+/// @notice Pays a contract through the forwarder, so its code does not run
+/// @dev Clears ok on failure, which only a short value causes
+#define macro PAY_FORCED() = takes(7) returns(2) {
+    // takes: [entry, 0, 32, 0, 0, offset, ok]
+    dup1 0xa0 shr               // [amount, entry, 0, 32, 0, 0, offset, ok]
+    // the entry is the forwarder's input, SELFDESTRUCT masks the address
+    swap1 0x00 mstore           // [amount, 0, 32, 0, 0, offset, ok]
+    [FORWARDER] gas call        // [success, offset, ok]
+    dup3 and swap2 pop          // [offset, ok & success]
+}
+
+/* Entry Point */
+
+#define macro MAIN() = takes(0) returns(0) {
+    // -32 on the stack, to step back with `dup3 add`, cheaper than `0x20 swap1 sub`
+    0x1f not                                // [-32]
+    0x01                                    // [ok, -32]
+    // underflows below 4 bytes, then reads zeros and fails the timestamp check
+    0x04 calldatasize sub                   // [end, ok, -32]
+
+    // reverts unless the batch is for this block; XOR, not EQ ISZERO
+    dup1 calldataload 0xe0 shr              // [batch_timestamp, end, ok, -32]
+    timestamp xor fail jumpi                // [end, ok, -32]
+
+    // reverts unless the entries are whole 32-byte words
+    dup1 0x1f and fail jumpi                // [end, ok, -32]
+
+    // without entries, only refunds the value
+    dup1 iszero done jumpi                  // [end, ok, -32]
+
+    // counts down to offset 0, so the offset is the loop condition
+    dup3 add                                // [offset, ok, -32]
+    dup1 loop jumpi                         // [offset, ok, -32]
+
+    // the first entry, paid last; SELFDESTRUCT when it takes exactly what is left
+    last:                                   // [0, ok, -32]
+        0x00 calldataload 0xa0 shr          // [amount, 0, ok, -32]
+        selfbalance eq exact jumpi          // [0, ok, -32]
+        // args_offset 0, args_size 32, ret_offset 0, ret_size 0, shared by both payments
+        0x00 0x00 0x20 0x00                 // [0, 32, 0, 0, 0, ok, -32]
+        dup5 calldataload                   // [entry, 0, 32, 0, 0, 0, ok, -32]
+        dup1 extcodesize last_forced jumpi  // [entry, 0, 32, 0, 0, 0, ok, -32]
+        PAY_BY_CALL()                       // [0, ok, -32]
+
+    done:                                   // [0, ok, -32]
+        // reverts if any payment failed
+        pop iszero fail jumpi               // [-32]
+        selfbalance refund jumpi            // [-32]
+        stop                                // [-32]
+
+    // SELFDESTRUCT, so the caller's code does not run
+    refund:                                 // [-32]
+        caller selfdestruct                 // [-32]
+
+    // accounts fall through; each path has its own tail, no JUMP back
+    loop:                                   // [offset, ok, -32]
+        0x00 0x00 0x20 0x00                 // [0, 32, 0, 0, offset, ok, -32]
+        dup5 calldataload                   // [entry, 0, 32, 0, 0, offset, ok, -32]
+        // EXTCODESIZE warms the recipient, ~100 gas net
+        dup1 extcodesize forced jumpi       // [entry, 0, 32, 0, 0, offset, ok, -32]
+        PAY_BY_CALL()                       // [offset, ok, -32]
+        dup3 add                            // [offset, ok, -32]
+        dup1 loop jumpi                     // [offset, ok, -32]
+        last jump                           // [0, ok, -32]
+
+    forced:                                 // [entry, 0, 32, 0, 0, offset, ok, -32]
+        PAY_FORCED()                        // [offset, ok, -32]
+        dup3 add                            // [offset, ok, -32]
+        dup1 loop jumpi                     // [offset, ok, -32]
+        last jump                           // [0, ok, -32]
+
+    last_forced:                            // [entry, 0, 32, 0, 0, 0, ok, -32]
+        PAY_FORCED()                        // [0, ok, -32]
+        done jump                           // [0, ok, -32]
+
+    // takes all that is left; its code does not run
+    exact:                                  // [0, ok, -32]
+        pop iszero fail jumpi               // [-32]
+        0x00 calldataload selfdestruct      // [-32]
+
+    fail:
+        0x00 0x00 revert
+}

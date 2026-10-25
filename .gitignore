@@ -1,0 +1,11 @@
+# Foundry
+cache/
+out/
+broadcast/
+
+# Environment
+.env
+
+# Editors
+.idea/
+.vscode/

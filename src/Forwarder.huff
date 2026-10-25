@@ -1,0 +1,13 @@
+/// @title Forwarder
+/// @author cakevm
+/// @notice Forwards the ETH it receives to the address in its calldata, without running that
+/// address's code.
+/// @dev Since Cancun (EIP-6780), SELFDESTRUCT only moves the balance, so the forwarder keeps its
+/// code.
+
+/* Entry Point */
+
+#define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload           // [recipient]
+    selfdestruct                // []
+}

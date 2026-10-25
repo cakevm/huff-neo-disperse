@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install Huff Neo Compiler
+        uses: cakevm/huff-neo-toolchain@v1
+
+      - name: Check formatting
+        run: forge fmt --check
+
+      - name: Run Solidity tests and check the gas snapshots
+        run: forge snapshot --check
+        env:
+          FORGE_SNAPSHOT_CHECK: true
+
+      - name: Simulate the deployment
+        run: forge script script/Deploy.s.sol
+
+      - name: Run Huff tests
+        run: for file in test/*.t.huff; do hnc $file test || exit 1; done

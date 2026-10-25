@@ -1,0 +1,19 @@
+// Runs the forwarder's MAIN as the test contract.
+
+#include "../src/Forwarder.huff"
+
+// The upper 12 bytes, here an amount, are ignored: only the address in the lower 20 bytes counts
+#[calldata(0x0000000003782dace9d900000000000000000000000000000000000000000b0b), value(5), deal(this, 0)]
+#[expect_balance(0xb0b, 5), expect_balance(this, 0)]
+#define test SENDS_THE_VALUE_TO_THE_ADDRESS() = { MAIN() }
+
+// ETH the forwarder held before, for example forced in by a SELFDESTRUCT, is sent along with the
+// payment
+#[calldata(0x0000000000000000000000000000000000000000000000000000000000000b0b), value(5), deal(this, 10)]
+#[expect_balance(0xb0b, 15), expect_balance(this, 0)]
+#define test SENDS_ALL_IT_HOLDS() = { MAIN() }
+
+// The recipient's code does not run, so a recipient that reverts on every call is still paid
+#[calldata(0x0000000000000000000000000000000000000000000000000000000000000b0b), value(5), deal(this, 0)]
+#[etch(0xb0b, 0x5f5ffd), expect_balance(0xb0b, 5)]
+#define test PAYS_A_RECIPIENT_THAT_REVERTS() = { MAIN() }

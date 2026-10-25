@@ -1,0 +1,20 @@
+[profile.default]
+solc_version = "0.8.38"
+evm_version = "osaka"
+auto_detect_solc = false
+ffi = true
+remappings = [
+  "forge-std=lib/forge-std/src/",
+  "foundry-huff-neo=lib/foundry-huff-neo/src/",
+]
+# Run each call from a test inside the test transaction, so gas matches a real transaction
+isolate = false
+
+[fuzz]
+runs = 1_000
+# A fixed seed keeps the gas snapshot of the fuzz tests stable
+seed = "0x1"
+
+[fmt]
+line_length = 120
+sort_imports = true

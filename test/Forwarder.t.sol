@@ -16,13 +16,14 @@ contract ForwarderTest is Test {
     using HuffNeoConfig for HuffConfig;
 
     address constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
-    address constant FORWARDER = 0x6d93D11e4C74e195DEe61693650D4FabCB6D6013;
+    address constant FORWARDER = 0xF000000000Ae9a463979125d6C3df571d9853200;
+    bytes32 constant FORWARDER_SALT = 0x0000000000000000000000000000000000000000ad32a01bdc3371059b2f5eab;
 
     address bob = makeAddr("bob");
 
     function setUp() public {
         bytes memory forwarder = HuffNeoDeployer.config().creation_code("src/Forwarder.huff");
-        (bool ok,) = CREATE2_DEPLOYER.call(abi.encodePacked(bytes32(0), forwarder));
+        (bool ok,) = CREATE2_DEPLOYER.call(abi.encodePacked(FORWARDER_SALT, forwarder));
         require(ok, "forwarder not deployed");
     }
 

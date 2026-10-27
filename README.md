@@ -58,17 +58,18 @@ An [access list](https://eips.ethereum.org/EIPS/eip-2930) with the recipients an
 
 ## Deployment
 
-Both contracts are deployed with CREATE2 through the [deterministic deployer](https://github.com/Arachnid/deterministic-deployment-proxy), at the same address on every chain:
+Both contracts are deployed with CREATE2 through the [deterministic deployer](https://github.com/Arachnid/deterministic-deployment-proxy), at the same address on every chain. Deploy the forwarder first:
 ```bash
-forge script script/Deploy.s.sol --rpc-url <RPC_URL> --private-key <KEY> --broadcast
+forge script script/DeployForwarder.s.sol --rpc-url <RPC_URL> --private-key <KEY> --broadcast
+forge script script/DeployDisperse.s.sol --rpc-url <RPC_URL> --private-key <KEY> --broadcast
 ```
 
 | Contract | Address |
 |---|---|
-| Forwarder | TBD |
-| Disperse | TBD |
+| Forwarder | `0xF000000000Ae9a463979125d6C3df571d9853200` |
+| Disperse | `0xD000000000D826d1525e0D209D7ac8C3b15D2C47` |
 
-Disperse pays contracts through the forwarder at its built-in address, so only use it on a chain where the forwarder is deployed. The script deploys the forwarder first.
+Disperse pays contracts through the forwarder at its built-in address, so only use it on a chain where the forwarder is deployed. `DeployDisperse.s.sol` refuses to run without it.
 
 ## Testing
 

@@ -19,7 +19,7 @@
 /* Constants */
 
 // The forwarder, which pays a contract without running its code
-#define constant FORWARDER = 0x6d93D11e4C74e195DEe61693650D4FabCB6D6013
+#define constant FORWARDER = 0xF000000000Ae9a463979125d6C3df571d9853200
 
 /* Payment Macros */
 

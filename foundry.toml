@@ -9,6 +9,8 @@ remappings = [
 ]
 # Run each call from a test inside the test transaction, so gas matches a real transaction
 isolate = false
+# The deploy test shifts the fuzz inputs depending on the thread count, so the gas snapshots only match on one thread
+threads = 1
 
 [fuzz]
 runs = 1_000

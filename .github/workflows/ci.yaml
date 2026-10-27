@@ -32,8 +32,15 @@ jobs:
         env:
           FORGE_SNAPSHOT_CHECK: true
 
+      # Disperse needs the forwarder on chain, so both are deployed in order to a local chain
       - name: Simulate the deployment
-        run: forge script script/Deploy.s.sol
+        run: |
+          anvil --silent --hardfork osaka &
+          until cast chain-id >/dev/null 2>&1; do sleep 0.1; done
+          for script in DeployForwarder DeployDisperse; do
+            forge script script/$script.s.sol --rpc-url http://127.0.0.1:8545 \
+              --unlocked --sender 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 --broadcast
+          done
 
       - name: Run Huff tests
         run: for file in test/*.t.huff; do hnc $file test || exit 1; done

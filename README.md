@@ -64,10 +64,12 @@ forge script script/DeployForwarder.s.sol --rpc-url <RPC_URL> --private-key <KEY
 forge script script/DeployDisperse.s.sol --rpc-url <RPC_URL> --private-key <KEY> --broadcast
 ```
 
+Both are deployed to Ethereum mainnet:
+
 | Contract | Address |
 |---|---|
-| Forwarder | `0xF000000000Ae9a463979125d6C3df571d9853200` |
-| Disperse | `0xD000000000D826d1525e0D209D7ac8C3b15D2C47` |
+| Forwarder | [`0xF000000000Ae9a463979125d6C3df571d9853200`](https://etherscan.io/address/0xF000000000Ae9a463979125d6C3df571d9853200) |
+| Disperse | [`0xD000000000D826d1525e0D209D7ac8C3b15D2C47`](https://etherscan.io/address/0xD000000000D826d1525e0D209D7ac8C3b15D2C47) |
 
 Disperse pays contracts through the forwarder at its built-in address, so only use it on a chain where the forwarder is deployed. `DeployDisperse.s.sol` refuses to run without it.
 

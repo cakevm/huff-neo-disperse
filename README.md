@@ -6,9 +6,9 @@ Sends ETH to many addresses in one transaction, written in Huff with [huff-neo](
 
 | Total gas | 1 account | 5 accounts | 25 accounts | 25 contracts |
 |---|---:|---:|---:|---:|
-| **huff-neo-disperse** | 29,031 | **67,821** | **261,641** | 384,777 |
-| [disperse.app](https://github.com/omniaprotocol/disperse.app) | 32,060 | 71,748 | 270,200 | 270,500 |
-| helix [PaymentForwarder](https://github.com/gattaca-com/helix/blob/main/contracts/src/PaymentForwarder.huff), one transaction each | **28,806** | 144,030 | 720,354 | 720,450 |
+| **huff-neo-disperse** | 29,031 | **67,821** | **261,857** | 384,777 |
+| [disperse.app](https://github.com/omniaprotocol/disperse.app) | 32,060 | 71,748 | 270,500 | 270,500 |
+| helix [PaymentForwarder](https://github.com/gattaca-com/helix/blob/main/contracts/src/PaymentForwarder.huff), one transaction each | **28,806** | 144,018 | 720,450 | 720,450 |
 | helix [SlotLockedDisperser](https://github.com/gattaca-com/helix/pull/480) | 42,449 | 73,467 | 266,093 | **266,093** |
 
 The recipients already exist, and the contracts accept ETH. disperse.app and SlotLockedDisperser run a contract's code, so one that rejects ETH reverts their whole batch. huff-neo-disperse pays about 5,000 gas more per contract so that its code never runs.
